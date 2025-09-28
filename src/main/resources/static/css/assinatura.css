@@ -1,0 +1,32 @@
+.modal-canvas-bg {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.modal-canvas .modal-dialog {
+    max-width: 98vw;
+}
+
+.modal-canvas .modal-content {
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 2.5px solid #1976d2;
+}
+
+
+#canvas {
+    border: 2px solid #1976d2;
+    border-radius: 6px;
+    background: #f8fafc;
+    width: 100%;
+    max-width: 400px;
+    height: 150px;
+    touch-action: none;
+    display: block;
+    margin: 0 auto 8px auto;
+}
+
+@media (max-width: 100%) {
+    #canvas {
+        height: 200px;
+    }
+}

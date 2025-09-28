@@ -1,0 +1,10 @@
+.menu-card {
+    transition: box-shadow 0.2s;
+}
+.menu-card:hover {
+    box-shadow: 0 4px 18px rgba(25,118,210,0.13);
+}
+.menu-icon {
+    font-size: 2.5rem;
+    color: #1976d2;
+}
