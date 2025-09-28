@@ -17,13 +17,19 @@ public class Assinatura {
     @Column(columnDefinition = "CLOB")
     private String imagemBase64;
 
-    public Assinatura() {}
+    @Column(unique = true, nullable = false, updatable = false)
+    private String token;
+
+    public Assinatura() {
+        this.token = java.util.UUID.randomUUID().toString();
+    }
 
     public Assinatura(String nome, String email, LocalDateTime dataHora, String imagemBase64) {
         this.nome = nome;
         this.email = email;
         this.dataHora = dataHora;
         this.imagemBase64 = imagemBase64;
+        this.token = java.util.UUID.randomUUID().toString();
     }
 
     // Getters e setters
@@ -37,4 +43,6 @@ public class Assinatura {
     public void setDataHora(LocalDateTime dataHora) { this.dataHora = dataHora; }
     public String getImagemBase64() { return imagemBase64; }
     public void setImagemBase64(String imagemBase64) { this.imagemBase64 = imagemBase64; }
+    public String getToken() { return token; }
+    public void setToken(String token) { this.token = token; }
 }

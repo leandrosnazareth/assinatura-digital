@@ -62,10 +62,13 @@
                                 <button type="submit" class="btn btn-primary btn-lg">Salvar Assinatura</button>
                             </div>
                         </form>
-                        <a th:href="@{/assinaturas}"
-                            class="d-block text-center mt-3 text-decoration-none text-primary fw-semibold">Ver
-                            assinaturas salvas</a>
-                        <div th:if="${mensagem}" th:text="${mensagem}" class="alert alert-success text-center mt-3">
+                        <a th:href="@{/}" class="d-block text-center mt-2 text-decoration-none text-secondary">Voltar ao menu principal</a>
+                        <div th:if="${mensagem}" class="alert alert-success text-center mt-3">
+                            <span th:text="${mensagem}"></span>
+                            <div th:if="${tokenAssinatura}" class="mt-2">
+                                <span class="fw-bold">Token da assinatura:</span>
+                                <span th:text="${tokenAssinatura}" class="text-monospace"></span>
+                            </div>
                         </div>
                     </div>
                 </div>

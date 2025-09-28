@@ -1,3 +1,5 @@
+// ...existing code...
+
 package com.leandrosnazareth.assinatura_digital.controller;
 
 import com.leandrosnazareth.assinatura_digital.model.Assinatura;
@@ -16,8 +18,11 @@ public class AssinaturaController {
     @Autowired
     private AssinaturaRepository assinaturaRepository;
 
-
     @GetMapping("/")
+    public String index() {
+        return "index";
+    }
+    @GetMapping("/nova-assinatura")
     public String formAssinatura() {
         return "form-assinatura";
     }
@@ -36,6 +41,25 @@ public class AssinaturaController {
         Assinatura assinatura = new Assinatura(nome, email, LocalDateTime.now(), imagemBase64);
         assinaturaRepository.save(assinatura);
         model.addAttribute("mensagem", "Assinatura salva com sucesso!");
+        model.addAttribute("tokenAssinatura", assinatura.getToken());
         return "form-assinatura";
+    }
+
+    @GetMapping("/validar")
+    public String formValidar() {
+        return "validar-assinatura";
+    }
+
+    @PostMapping("/validar")
+    public String validarAssinatura(@RequestParam String token, Model model) {
+        var assinaturaOpt = assinaturaRepository.findAll().stream()
+                .filter(a -> a.getToken().equals(token))
+                .findFirst();
+        if (assinaturaOpt.isPresent()) {
+            model.addAttribute("assinatura", assinaturaOpt.get());
+        } else {
+            model.addAttribute("erro", "Assinatura não encontrada para o token informado.");
+        }
+        return "validar-assinatura";
     }
 }
