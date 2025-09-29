@@ -70,8 +70,15 @@ const controls = document.getElementById('controls');
 
 
 let drawing = false;
-let mode = 'draw'; // 'draw' ou 'move'
+let mode = 'move'; // 'draw' ou 'move'
 const toggleBtn = document.getElementById('toggle-mode');
+
+// Inicializa o modo mover ao carregar a página
+window.addEventListener('DOMContentLoaded', function () {
+    mode = 'move';
+    toggleBtn.textContent = 'Modo: Mover';
+    signatureCanvas.style.cursor = 'move';
+});
 
 toggleBtn.onclick = function () {
     if (mode === 'draw') {
