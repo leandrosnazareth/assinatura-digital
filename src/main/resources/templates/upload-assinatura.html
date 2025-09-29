@@ -45,17 +45,87 @@
 
 <div id="pdf-container" style="display:none;">
     <canvas id="pdf-viewer"></canvas>
-    <canvas id="signature-canvas" width="200" height="80"></canvas>
+    <canvas id="signature-canvas" width="300" height="60"></canvas>
 </div>
 
 <div id="controls" style="display:none;">
     <button id="clear-signature">Limpar Assinatura</button>
     <button id="toggle-mode" type="button">Modo: Desenhar</button>
+    <button id="ampliar-assinatura" type="button">Ampliar assinatura</button>
     <button id="apply-signature">Aplicar Assinatura no PDF</button>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<!-- Modal para assinatura ampliada -->
+<div id="modal-ampliar" style="display:none;position:fixed;z-index:3000;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;">
+    <div style="background:#fff;padding:24px 16px 16px 16px;border-radius:12px;max-width:960px;width:98vw;max-height:98vh;box-shadow:0 4px 32px #0005;display:flex;flex-direction:column;align-items:center;">
+        <h4>Assine no espaço ampliado</h4>
+        <canvas id="canvas-ampliado" width="900" height="400" style="width:98vw;max-width:900px;height:45vw;max-height:400px;background:#f8fafc;border:2.5px solid #1976d2;border-radius:12px;"></canvas>
+        <div style="margin-top:10px;display:flex;gap:10px;">
+            <button id="limpar-ampliado" class="btn btn-danger btn-sm">Limpar</button>
+            <button id="fechar-ampliado" class="btn btn-secondary btn-sm">Fechar</button>
+            <button id="usar-ampliado" class="btn btn-primary btn-sm">Usar esta assinatura</button>
+        </div>
+    </div>
+</div>
 <script>
+// --- Assinatura ampliada ---
+const btnAmpliar = document.getElementById('ampliar-assinatura');
+const modalAmpliar = document.getElementById('modal-ampliar');
+const canvasAmpliado = document.getElementById('canvas-ampliado');
+const ctxAmpliado = canvasAmpliado.getContext('2d');
+let desenhandoAmpliado = false;
+
+// Definir a espessura do traço proporcional ao canvas principal
+function getProportionalLineWidth() {
+    // Exemplo: se o canvas principal usa 2px, ajuste proporcionalmente
+    const mainLineWidth = 2; // ajuste conforme o padrão do canvas principal
+    const proporcao = canvasAmpliado.width / signatureCanvas.width;
+    return mainLineWidth * proporcao;
+}
+
+btnAmpliar.onclick = function() {
+    modalAmpliar.style.display = 'flex';
+    ctxAmpliado.clearRect(0, 0, canvasAmpliado.width, canvasAmpliado.height);
+};
+document.getElementById('fechar-ampliado').onclick = function() {
+    modalAmpliar.style.display = 'none';
+};
+document.getElementById('limpar-ampliado').onclick = function() {
+    ctxAmpliado.clearRect(0, 0, canvasAmpliado.width, canvasAmpliado.height);
+};
+canvasAmpliado.addEventListener('mousedown', function(e) {
+    desenhandoAmpliado = true;
+    ctxAmpliado.beginPath();
+    ctxAmpliado.moveTo(e.offsetX, e.offsetY);
+    ctxAmpliado.lineWidth = getProportionalLineWidth();
+    ctxAmpliado.lineCap = 'round';
+    ctxAmpliado.lineJoin = 'round';
+});
+canvasAmpliado.addEventListener('mousemove', function(e) {
+    if (desenhandoAmpliado) {
+        ctxAmpliado.lineTo(e.offsetX, e.offsetY);
+        ctxAmpliado.stroke();
+    }
+});
+canvasAmpliado.addEventListener('mouseup', function(e) {
+    desenhandoAmpliado = false;
+});
+canvasAmpliado.addEventListener('mouseleave', function(e) {
+    desenhandoAmpliado = false;
+});
+document.getElementById('usar-ampliado').onclick = function() {
+    // Copia a assinatura ampliada para o canvas de assinatura principal
+    const img = new window.Image();
+    img.onload = function() {
+        ctx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+        // Redimensiona proporcionalmente para caber no canvas principal
+        ctx.drawImage(img, 0, 0, signatureCanvas.width, signatureCanvas.height);
+        signatureDrawn = true;
+        modalAmpliar.style.display = 'none';
+    };
+    img.src = canvasAmpliado.toDataURL('image/png');
+};
 let pdfDoc = null;
 let pageNum = 1;
 let signatureDrawn = false;
@@ -171,8 +241,9 @@ function showPDF(url) {
             const viewport = page.getViewport({scale: 1.5});
             pdfViewer.width = viewport.width;
             pdfViewer.height = viewport.height;
-            signatureCanvas.width = 200;
-            signatureCanvas.height = 80;
+            // tamanho do canvas de 
+            signatureCanvas.width = 350;
+            signatureCanvas.height = 100;
             signatureCanvas.style.left = '50px';
             signatureCanvas.style.top = '50px';
             pdfContainer.style.width = viewport.width + 'px';
