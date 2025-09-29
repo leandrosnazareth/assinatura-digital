@@ -88,7 +88,7 @@ public class AssinaturaController {
         float yPdf = pdfHeight - assinaturaY - assinaturaH;
 
     // Gera token e data/hora
-    String token = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    String token = java.util.UUID.randomUUID().toString();
     String dataHora = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss").format(java.time.LocalDateTime.now());
     String nome = req.getNome() != null ? req.getNome() : "";
 
