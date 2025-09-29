@@ -35,17 +35,20 @@ public class AssinaturaController {
     public String index() {
         return "index";
     }
+
     @GetMapping("/upload-assinatura")
     public String uploadAssinatura() {
         return "upload-assinatura";
     }
+
     // Recebe upload do PDF e retorna o PDF para visualização
     @PostMapping("/upload-pdf")
     @ResponseBody
     public ResponseEntity<Void> uploadPdf(@RequestParam("file") MultipartFile file) throws IOException {
         // Salva o PDF temporariamente para uso posterior
         File tempDir = new File("uploads/pdf");
-        if (!tempDir.exists()) tempDir.mkdirs();
+        if (!tempDir.exists())
+            tempDir.mkdirs();
         File tempFile = new File(tempDir, "temp.pdf");
         try (FileOutputStream fos = new FileOutputStream(tempFile)) {
             fos.write(file.getBytes());
@@ -53,13 +56,10 @@ public class AssinaturaController {
         return ResponseEntity.ok().build();
     }
 
-
-    // Recebe assinatura, posição e aplica no PDF (exemplo simplificado: PDF de 1 página, posição absoluta)
     @PostMapping(value = "/apply-signature", produces = MediaType.APPLICATION_PDF_VALUE)
     @ResponseBody
     public ResponseEntity<byte[]> applySignature(@RequestBody SignatureRequest req) throws IOException {
-        // Para simplificação, espera-se que o PDF original esteja em disco ou em memória (ajuste conforme sua lógica)
-        File pdfFile = new File("uploads/pdf/temp.pdf"); // Exemplo: PDF temporário
+        File pdfFile = new File("uploads/pdf/temp.pdf");
         if (!pdfFile.exists()) {
             return ResponseEntity.badRequest().body(null);
         }
@@ -73,62 +73,77 @@ public class AssinaturaController {
         BufferedImage signatureImage = ImageIO.read(new ByteArrayInputStream(imageBytes));
         PDImageXObject pdImage = PDImageXObject.createFromByteArray(document, imageBytes, "signature");
 
-        // Ajuste de escala: pega o tamanho do PDF real e do canvas exibido (frontend usa scale 1.5)
-        float pdfWidth = page.getMediaBox().getWidth();
+        // Obter dimensões da página PDF
         float pdfHeight = page.getMediaBox().getHeight();
+        float pdfWidth = page.getMediaBox().getWidth();
         float canvasScale = 1.5f;
 
-        // Calcula posição e tamanho reais
+        // Converter coordenadas do canvas para coordenadas do PDF
+        // No canvas: (0,0) = canto superior esquerdo
+        // No PDF: (0,0) = canto inferior esquerdo
         float assinaturaX = req.getX() / canvasScale;
-        float assinaturaY = req.getY() / canvasScale;
+        float assinaturaYCanvas = req.getY() / canvasScale;
         float assinaturaW = signatureImage.getWidth() / canvasScale;
         float assinaturaH = signatureImage.getHeight() / canvasScale;
 
-        // No PDF, o (0,0) é canto inferior esquerdo, então precisa inverter o Y
-        float yPdf = pdfHeight - assinaturaY - assinaturaH;
+        // CORREÇÃO: Inverter o Y do canvas para o sistema de coordenadas do PDF
+        // yPDF = altura_da_página - y_do_canvas - altura_da_assinatura
+        float yPdf = pdfHeight - assinaturaYCanvas - assinaturaH;
 
-    // Gera token e data/hora
-    String token = java.util.UUID.randomUUID().toString();
-    String dataHora = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss").format(java.time.LocalDateTime.now());
-    String nome = req.getNome() != null ? req.getNome() : "";
+        // Gera token e data/hora
+        String token = java.util.UUID.randomUUID().toString();
+        String dataHora = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")
+                .format(java.time.LocalDateTime.now());
+        String nome = req.getNome() != null ? req.getNome() : "";
 
-    PDPageContentStream contentStream = new PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true);
-    contentStream.drawImage(pdImage, assinaturaX, yPdf, assinaturaW, assinaturaH);
+        PDPageContentStream contentStream = new PDPageContentStream(document, page,
+                PDPageContentStream.AppendMode.APPEND, true, true);
 
-    // Escreve 'Assinado por', token e data/hora
-    float fontSize = 10f;
+        // Desenha a imagem da assinatura
+        contentStream.drawImage(pdImage, assinaturaX, yPdf, assinaturaW, assinaturaH);
 
-    float textX = assinaturaX;
-    float yAssinadoPor = yPdf - fontSize - 2; // 2px abaixo da assinatura
-    float yToken = yAssinadoPor - fontSize - 2;
-    float yDataHora = yToken - fontSize - 2;
+        // Configurações do texto
+        float fontSize = 10f;
+        float textX = assinaturaX;
 
-    // Assinado digitalmente por: <nome>
-    contentStream.beginText();
-    contentStream.setFont(org.apache.pdfbox.pdmodel.font.PDType1Font.HELVETICA, fontSize);
-    contentStream.newLineAtOffset(textX, yAssinadoPor);
-    contentStream.showText("Assinado digitalmente por: " + nome);
-    contentStream.endText();
+        // CORREÇÃO: Posicionar o texto ABAIXO da assinatura (menor Y no sistema PDF)
+        float yAssinadoPor = yPdf - fontSize - 2;
+        float yToken = yAssinadoPor - fontSize - 2;
+        float yDataHora = yToken - fontSize - 2;
 
-    // Token
-    contentStream.beginText();
-    contentStream.setFont(org.apache.pdfbox.pdmodel.font.PDType1Font.HELVETICA, fontSize);
-    contentStream.newLineAtOffset(textX, yToken);
-    contentStream.showText("Token: " + token);
-    contentStream.endText();
+        // Assinado digitalmente por: <nome>
+        contentStream.beginText();
+        contentStream.setFont(org.apache.pdfbox.pdmodel.font.PDType1Font.HELVETICA, fontSize);
+        contentStream.newLineAtOffset(textX, yAssinadoPor);
+        contentStream.showText("Assinado digitalmente por: " + nome);
+        contentStream.endText();
 
-    // Data/Hora
-    contentStream.beginText();
-    contentStream.setFont(org.apache.pdfbox.pdmodel.font.PDType1Font.HELVETICA, fontSize);
-    contentStream.newLineAtOffset(textX, yDataHora);
-    contentStream.showText("Data/Hora: " + dataHora);
-    contentStream.endText();
+        // Token
+        contentStream.beginText();
+        contentStream.setFont(org.apache.pdfbox.pdmodel.font.PDType1Font.HELVETICA, fontSize);
+        contentStream.newLineAtOffset(textX, yToken);
+        contentStream.showText("Token: " + token);
+        contentStream.endText();
 
-    contentStream.close();
+        // Data/Hora
+        contentStream.beginText();
+        contentStream.setFont(org.apache.pdfbox.pdmodel.font.PDType1Font.HELVETICA, fontSize);
+        contentStream.newLineAtOffset(textX, yDataHora);
+        contentStream.showText("Data/Hora: " + dataHora);
+        contentStream.endText();
+
+        contentStream.close();
+
+        // Salvar a assinatura no banco de dados
+        Assinatura assinatura = new Assinatura(nome, req.getEmail(),
+                java.time.LocalDateTime.now(), req.getSignature());
+        assinatura.setToken(token);
+        assinaturaRepository.save(assinatura);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         document.save(baos);
         document.close();
+
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(baos.toByteArray());
@@ -141,17 +156,48 @@ public class AssinaturaController {
         private int y;
         private String nome;
         private String email;
-        public String getSignature() { return signature; }
-        public void setSignature(String signature) { this.signature = signature; }
-        public int getX() { return x; }
-        public void setX(int x) { this.x = x; }
-        public int getY() { return y; }
-        public void setY(int y) { this.y = y; }
-        public String getNome() { return nome; }
-        public void setNome(String nome) { this.nome = nome; }
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
+
+        public String getSignature() {
+            return signature;
+        }
+
+        public void setSignature(String signature) {
+            this.signature = signature;
+        }
+
+        public int getX() {
+            return x;
+        }
+
+        public void setX(int x) {
+            this.x = x;
+        }
+
+        public int getY() {
+            return y;
+        }
+
+        public void setY(int y) {
+            this.y = y;
+        }
+
+        public String getNome() {
+            return nome;
+        }
+
+        public void setNome(String nome) {
+            this.nome = nome;
+        }
+
+        public String getEmail() {
+            return email;
+        }
+
+        public void setEmail(String email) {
+            this.email = email;
+        }
     }
+
     @GetMapping("/nova-assinatura")
     public String formAssinatura() {
         return "form-assinatura";
@@ -165,9 +211,9 @@ public class AssinaturaController {
 
     @PostMapping("/salvar")
     public String salvarAssinatura(@RequestParam String nome,
-                                   @RequestParam String email,
-                                   @RequestParam("imagemBase64") String imagemBase64,
-                                   Model model) {
+            @RequestParam String email,
+            @RequestParam("imagemBase64") String imagemBase64,
+            Model model) {
         Assinatura assinatura = new Assinatura(nome, email, LocalDateTime.now(), imagemBase64);
         assinaturaRepository.save(assinatura);
         model.addAttribute("mensagem", "Assinatura salva com sucesso!");
