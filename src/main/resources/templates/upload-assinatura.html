@@ -25,10 +25,22 @@
     </style>
 </head>
 <body>
+
 <h2>Upload e Assinatura de PDF</h2>
 <form id="upload-form" enctype="multipart/form-data" method="post" th:action="@{/upload-pdf}">
-    <input type="file" id="pdf-file" name="file" accept="application/pdf" required />
-    <button type="button" id="btn-upload">Carregar PDF</button>
+    <div class="mb-3">
+        <label for="nome" class="form-label">Nome:</label>
+        <input type="text" name="nome" id="nome" class="form-control" required />
+    </div>
+    <div class="mb-3">
+        <label for="email" class="form-label">Email:</label>
+        <input type="email" name="email" id="email" class="form-control" required />
+    </div>
+    <div class="mb-3">
+        <label for="pdf-file" class="form-label">Selecione o PDF:</label>
+        <input type="file" id="pdf-file" name="file" accept="application/pdf" class="form-control" required />
+    </div>
+    <button type="button" id="btn-upload" class="btn btn-primary mb-3">Carregar PDF</button>
 </form>
 
 <div id="pdf-container" style="display:none;">
@@ -79,7 +91,7 @@ signatureCanvas.addEventListener('mousedown', function(e) {
         drawing = true;
         ctx.beginPath();
         ctx.moveTo(e.offsetX, e.offsetY);
-    } else if (mode === 'move' && signatureDrawn) {
+    } else if (mode === 'move') {
         dragging = true;
         offset.x = e.offsetX;
         offset.y = e.offsetY;
@@ -193,13 +205,17 @@ applyBtn.onclick = function() {
     // Posição relativa ao pdf-viewer
     const x = sigRect.left - pdfRect.left;
     const y = sigRect.top - pdfRect.top;
+    const nome = document.getElementById('nome') ? document.getElementById('nome').value : '';
+    const email = document.getElementById('email') ? document.getElementById('email').value : '';
     fetch('/apply-signature', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
             signature: signatureDataUrl,
             x: x,
-            y: y
+            y: y,
+            nome: nome,
+            email: email
         })
     })
     .then(response => response.blob())

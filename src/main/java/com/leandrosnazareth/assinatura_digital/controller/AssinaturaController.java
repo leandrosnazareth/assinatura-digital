@@ -53,6 +53,7 @@ public class AssinaturaController {
         return ResponseEntity.ok().build();
     }
 
+
     // Recebe assinatura, posição e aplica no PDF (exemplo simplificado: PDF de 1 página, posição absoluta)
     @PostMapping(value = "/apply-signature", produces = MediaType.APPLICATION_PDF_VALUE)
     @ResponseBody
@@ -63,34 +64,66 @@ public class AssinaturaController {
             return ResponseEntity.badRequest().body(null);
         }
 
-    PDDocument document = PDDocument.load(pdfFile);
-    PDPage page = document.getPage(0);
+        PDDocument document = PDDocument.load(pdfFile);
+        PDPage page = document.getPage(0);
 
-    // Decodifica imagem da assinatura
-    String base64Image = req.getSignature().replaceFirst("^data:image/[^;]+;base64,", "");
-    byte[] imageBytes = Base64.getDecoder().decode(base64Image);
-    BufferedImage signatureImage = ImageIO.read(new ByteArrayInputStream(imageBytes));
-    PDImageXObject pdImage = PDImageXObject.createFromByteArray(document, imageBytes, "signature");
+        // Decodifica imagem da assinatura
+        String base64Image = req.getSignature().replaceFirst("^data:image/[^;]+;base64,", "");
+        byte[] imageBytes = Base64.getDecoder().decode(base64Image);
+        BufferedImage signatureImage = ImageIO.read(new ByteArrayInputStream(imageBytes));
+        PDImageXObject pdImage = PDImageXObject.createFromByteArray(document, imageBytes, "signature");
 
-    // Ajuste de escala: pega o tamanho do PDF real e do canvas exibido (frontend usa scale 1.5)
-    float pdfWidth = page.getMediaBox().getWidth();
-    float pdfHeight = page.getMediaBox().getHeight();
-    // O frontend usa scale 1.5, então o canvas tem width = pdfWidth * 1.5
-    float canvasScale = 1.5f;
-    float canvasWidth = pdfWidth * canvasScale;
-    float canvasHeight = pdfHeight * canvasScale;
+        // Ajuste de escala: pega o tamanho do PDF real e do canvas exibido (frontend usa scale 1.5)
+        float pdfWidth = page.getMediaBox().getWidth();
+        float pdfHeight = page.getMediaBox().getHeight();
+        float canvasScale = 1.5f;
 
-    // Calcula posição e tamanho reais
-    float assinaturaX = req.getX() / canvasScale;
-    float assinaturaY = req.getY() / canvasScale;
-    float assinaturaW = signatureImage.getWidth() / canvasScale;
-    float assinaturaH = signatureImage.getHeight() / canvasScale;
+        // Calcula posição e tamanho reais
+        float assinaturaX = req.getX() / canvasScale;
+        float assinaturaY = req.getY() / canvasScale;
+        float assinaturaW = signatureImage.getWidth() / canvasScale;
+        float assinaturaH = signatureImage.getHeight() / canvasScale;
 
-    // No PDF, o (0,0) é canto inferior esquerdo, então precisa inverter o Y
-    float yPdf = pdfHeight - assinaturaY - assinaturaH;
+        // No PDF, o (0,0) é canto inferior esquerdo, então precisa inverter o Y
+        float yPdf = pdfHeight - assinaturaY - assinaturaH;
+
+    // Gera token e data/hora
+    String token = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    String dataHora = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss").format(java.time.LocalDateTime.now());
+    String nome = req.getNome() != null ? req.getNome() : "";
 
     PDPageContentStream contentStream = new PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true);
     contentStream.drawImage(pdImage, assinaturaX, yPdf, assinaturaW, assinaturaH);
+
+    // Escreve 'Assinado por', token e data/hora
+    float fontSize = 10f;
+
+    float textX = assinaturaX;
+    float yAssinadoPor = yPdf - fontSize - 2; // 2px abaixo da assinatura
+    float yToken = yAssinadoPor - fontSize - 2;
+    float yDataHora = yToken - fontSize - 2;
+
+    // Assinado digitalmente por: <nome>
+    contentStream.beginText();
+    contentStream.setFont(org.apache.pdfbox.pdmodel.font.PDType1Font.HELVETICA, fontSize);
+    contentStream.newLineAtOffset(textX, yAssinadoPor);
+    contentStream.showText("Assinado digitalmente por: " + nome);
+    contentStream.endText();
+
+    // Token
+    contentStream.beginText();
+    contentStream.setFont(org.apache.pdfbox.pdmodel.font.PDType1Font.HELVETICA, fontSize);
+    contentStream.newLineAtOffset(textX, yToken);
+    contentStream.showText("Token: " + token);
+    contentStream.endText();
+
+    // Data/Hora
+    contentStream.beginText();
+    contentStream.setFont(org.apache.pdfbox.pdmodel.font.PDType1Font.HELVETICA, fontSize);
+    contentStream.newLineAtOffset(textX, yDataHora);
+    contentStream.showText("Data/Hora: " + dataHora);
+    contentStream.endText();
+
     contentStream.close();
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -106,12 +139,18 @@ public class AssinaturaController {
         private String signature;
         private int x;
         private int y;
+        private String nome;
+        private String email;
         public String getSignature() { return signature; }
         public void setSignature(String signature) { this.signature = signature; }
         public int getX() { return x; }
         public void setX(int x) { this.x = x; }
         public int getY() { return y; }
         public void setY(int y) { this.y = y; }
+        public String getNome() { return nome; }
+        public void setNome(String nome) { this.nome = nome; }
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
     }
     @GetMapping("/nova-assinatura")
     public String formAssinatura() {
