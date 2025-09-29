@@ -33,13 +33,12 @@
     </div>
 
     <div id="controls" style="display:none;">
-        <button id="clear-signature">Limpar Assinatura</button>
-        <button id="toggle-mode" type="button">Modo: Desenhar</button>
-        <button id="ampliar-assinatura" type="button">Ampliar assinatura</button>
-        <button id="apply-signature">Aplicar Assinatura no PDF</button>
+        <button id="clear-signature" class="btn btn-danger btn-sm me-2" type="button">Limpar Assinatura</button>
+        <button id="toggle-mode" class="btn btn-secondary btn-sm me-2" type="button">Modo: Desenhar</button>
+        <button id="ampliar-assinatura" class="btn btn-info btn-sm me-2" type="button">Ampliar assinatura</button>
+        <button id="apply-signature" class="btn btn-success btn-sm" type="button">Aplicar Assinatura no PDF</button>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <!-- Modal para assinatura ampliada -->
     <div id="modal-ampliar"
         style="display:none;position:fixed;z-index:3000;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;">
@@ -49,12 +48,13 @@
             <canvas id="canvas-ampliado" width="900" height="400"
                 style="width:98vw;max-width:900px;height:45vw;max-height:400px;background:#f8fafc;border:2.5px solid #1976d2;border-radius:12px;"></canvas>
             <div style="margin-top:10px;display:flex;gap:10px;">
-                <button id="limpar-ampliado" class="btn btn-danger btn-sm">Limpar</button>
-                <button id="fechar-ampliado" class="btn btn-secondary btn-sm">Fechar</button>
-                <button id="usar-ampliado" class="btn btn-primary btn-sm">Usar esta assinatura</button>
+                <button id="limpar-ampliado" class="btn btn-danger btn-sm" type="button">Limpar</button>
+                <button id="fechar-ampliado" class="btn btn-secondary btn-sm" type="button">Fechar</button>
+                <button id="usar-ampliado" class="btn btn-primary btn-sm" type="button">Usar esta assinatura</button>
             </div>
         </div>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="/js/assina-pdf.js"></script>
 </body>
 
