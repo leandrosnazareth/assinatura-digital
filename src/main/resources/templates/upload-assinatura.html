@@ -1,61 +1,395 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-br" xml:lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <title>Upload e Assinatura de PDF</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Assinatura Digital de PDF</title>
     <link rel="stylesheet" href="/css/canvas-assinatura.css">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary-color: #64748b;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 2rem 0;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .header-section {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            color: white;
+        }
+
+        .header-section h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header-section p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        .card-custom {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin-bottom: 2rem;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-control {
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn-upload {
+            background: var(--primary-color);
+            border: none;
+            padding: 0.875rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        .btn-upload:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);
+        }
+
+        #pdf-container {
+            position: relative;
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.1);
+            display: inline-block;
+            margin: 1.5rem auto;
+        }
+
+        #pdf-viewer {
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        #signature-canvas {
+            border: 3px dashed var(--primary-color);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.9);
+            cursor: crosshair;
+            transition: all 0.3s ease;
+        }
+
+        #signature-canvas:hover {
+            background: rgba(255,255,255,1);
+            border-color: var(--primary-dark);
+        }
+
+        .controls-wrapper {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-top: 1.5rem;
+        }
+
+        .controls-wrapper h5 {
+            color: #334155;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-control {
+            padding: 0.625rem 1.25rem;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .btn-control:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .btn-clear {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .btn-clear:hover {
+            background: #fecaca;
+        }
+
+        .btn-mode {
+            background: #e0e7ff;
+            color: #4338ca;
+        }
+
+        .btn-mode:hover {
+            background: #c7d2fe;
+        }
+
+        .btn-ampliar {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .btn-ampliar:hover {
+            background: #bfdbfe;
+        }
+
+        .btn-apply {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .btn-apply:hover {
+            background: #a7f3d0;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            z-index: 3000;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.85);
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content-custom {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            max-width: 960px;
+            width: 95vw;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: scaleIn 0.3s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal-content-custom h4 {
+            color: #1e293b;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        #canvas-ampliado {
+            width: 98%;
+            max-width: 900px;
+            height: 400px;
+            background: #f8fafc;
+            border: 3px solid var(--primary-color);
+            border-radius: 12px;
+            cursor: crosshair;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .modal-buttons {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .icon-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .header-section h1 {
+                font-size: 1.75rem;
+            }
+
+            .card-custom {
+                padding: 1.5rem;
+            }
+
+            .btn-control {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+        }
+    </style>
 </head>
-
 <body>
-
-    <h2>Upload e Assinatura de PDF</h2>
-    <form id="upload-form" enctype="multipart/form-data" method="post" th:action="@{/upload-pdf}">
-        <div class="mb-3">
-            <label for="nome" class="form-label">Nome:</label>
-            <input type="text" name="nome" id="nome" class="form-control" required />
+    <div class="main-container">
+        <div class="header-section">
+            <h1><i class="fas fa-file-signature"></i> Assinatura Digital de PDF</h1>
+            <p>Assine seus documentos de forma rápida, segura e profissional</p>
         </div>
-        <div class="mb-3">
-            <label for="email" class="form-label">Email:</label>
-            <input type="email" name="email" id="email" class="form-control" required />
+
+        <div class="card-custom">
+            <h4 class="mb-4">
+                <span class="icon-badge"><i class="fas fa-upload"></i></span>
+                Dados do Signatário
+            </h4>
+            <form id="upload-form" enctype="multipart/form-data" method="post" th:action="@{/upload-pdf}">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="nome" class="form-label">
+                            <i class="fas fa-user"></i> Nome Completo
+                        </label>
+                        <input type="text" name="nome" id="nome" class="form-control" placeholder="Digite seu nome completo" required />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="email" class="form-label">
+                            <i class="fas fa-envelope"></i> Email
+                        </label>
+                        <input type="email" name="email" id="email" class="form-control" placeholder="seu@email.com" required />
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="pdf-file" class="form-label">
+                        <i class="fas fa-file-pdf"></i> Documento PDF
+                    </label>
+                    <input type="file" id="pdf-file" name="file" accept="application/pdf" class="form-control" required />
+                </div>
+                <button type="button" id="btn-upload" class="btn btn-primary btn-upload">
+                    <i class="fas fa-cloud-upload-alt me-2"></i> Carregar e Visualizar PDF
+                </button>
+            </form>
         </div>
-        <div class="mb-3">
-            <label for="pdf-file" class="form-label">Selecione o PDF:</label>
-            <input type="file" id="pdf-file" name="file" accept="application/pdf" class="form-control" required />
+
+        <div id="pdf-container" style="display:none;">
+            <canvas id="pdf-viewer"></canvas>
+            <canvas id="signature-canvas" width="300" height="60"></canvas>
         </div>
-        <button type="button" id="btn-upload" class="btn btn-primary mb-3">Carregar PDF</button>
-    </form>
 
-    <div id="pdf-container" style="display:none;">
-        <canvas id="pdf-viewer"></canvas>
-        <canvas id="signature-canvas" width="300" height="60"></canvas>
-    </div>
-
-    <div id="controls" style="display:none;">
-        <button id="clear-signature" class="btn btn-danger btn-sm me-2" type="button">Limpar Assinatura</button>
-        <button id="toggle-mode" class="btn btn-secondary btn-sm me-2" type="button">Modo: Desenhar</button>
-        <button id="ampliar-assinatura" class="btn btn-info btn-sm me-2" type="button">Ampliar assinatura</button>
-        <button id="apply-signature" class="btn btn-success btn-sm" type="button">Aplicar Assinatura no PDF</button>
-    </div>
-
-    <!-- Modal para assinatura ampliada -->
-    <div id="modal-ampliar"
-        style="display:none;position:fixed;z-index:3000;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;">
-        <div
-            style="background:#fff;padding:24px 16px 16px 16px;border-radius:12px;max-width:960px;width:98vw;max-height:98vh;box-shadow:0 4px 32px #0005;display:flex;flex-direction:column;align-items:center;">
-            <h4>Assine no espaço ampliado</h4>
-            <canvas id="canvas-ampliado" width="900" height="400"
-                style="width:98vw;max-width:900px;height:45vw;max-height:400px;background:#f8fafc;border:2.5px solid #1976d2;border-radius:12px;"></canvas>
-            <div style="margin-top:10px;display:flex;gap:10px;">
-                <button id="limpar-ampliado" class="btn btn-danger btn-sm" type="button">Limpar</button>
-                <button id="fechar-ampliado" class="btn btn-secondary btn-sm" type="button">Fechar</button>
-                <button id="usar-ampliado" class="btn btn-primary btn-sm" type="button">Usar esta assinatura</button>
+        <div id="controls" class="controls-wrapper" style="display:none;">
+            <h5>
+                <span class="icon-badge"><i class="fas fa-edit"></i></span>
+                Ferramentas de Assinatura
+            </h5>
+            <div class="d-flex flex-wrap gap-2">
+                <button id="clear-signature" class="btn btn-control btn-clear" type="button">
+                    <i class="fas fa-eraser me-1"></i> Limpar Assinatura
+                </button>
+                <button id="toggle-mode" class="btn btn-control btn-mode" type="button">
+                    <i class="fas fa-pencil-alt me-1"></i> Modo: Desenhar
+                </button>
+                <button id="ampliar-assinatura" class="btn btn-control btn-ampliar" type="button">
+                    <i class="fas fa-expand me-1"></i> Ampliar Assinatura
+                </button>
+                <button id="apply-signature" class="btn btn-control btn-apply" type="button">
+                    <i class="fas fa-check-circle me-1"></i> Aplicar no PDF
+                </button>
             </div>
         </div>
     </div>
+
+    <!-- Modal para assinatura ampliada -->
+    <div id="modal-ampliar" class="modal-overlay">
+        <div class="modal-content-custom">
+            <h4>
+                <i class="fas fa-signature"></i>
+                Assine no Espaço Ampliado
+            </h4>
+            <canvas id="canvas-ampliado" width="900" height="400"></canvas>
+            <div class="modal-buttons">
+                <button id="limpar-ampliado" class="btn btn-danger" type="button">
+                    <i class="fas fa-trash-alt me-1"></i> Limpar
+                </button>
+                <button id="fechar-ampliado" class="btn btn-secondary" type="button">
+                    <i class="fas fa-times me-1"></i> Fechar
+                </button>
+                <button id="usar-ampliado" class="btn btn-primary" type="button">
+                    <i class="fas fa-check me-1"></i> Usar esta Assinatura
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="/js/assina-pdf.js"></script>
 </body>
-
 </html>
