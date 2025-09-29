@@ -1,0 +1,21 @@
+#pdf-container {
+    position: relative;
+    display: inline-block;
+}
+
+#signature-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 2px dashed #007bff;
+    cursor: move;
+    background: transparent;
+}
+
+#pdf-viewer {
+    border: 1px solid #ccc;
+}
+
+#controls {
+    margin-top: 20px;
+}
